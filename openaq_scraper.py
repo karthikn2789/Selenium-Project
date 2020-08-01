@@ -141,13 +141,18 @@ def get_pm_data():
         except exception.NoSuchElementException:
             # Logging the info of locations that do not have PM2.5 data for manual checking
             logger.error(f"{location} in {city},{country} does not have PM2.5")
+        except IndexError:
+            logger.error(f"IndexError for URL: {url}")
+        except exception.StaleElementReferenceException:
+            logger.error(f"StaleElement Exception for URL: {url}")
+
         # Terminating and re-instantiating webdriver every 200 URL to reduce the load on RAM
         if (i != 0) and (i % 200 == 0):
             driver.quit()
             driver = webdriver.Chrome(desired_capabilities=desired_capabilities)
             logger.info("Chromedriver restarted")
     # Write the extracted data into a JSON file
-    with open("openaq_data.json", "w") as f:
+    with open("openaq_data_1.json", "w") as f:
         json.dump(list_data_dict, f)
     logger.info(f"Scraped {count} PM2.5 readings.")
     driver.quit()
