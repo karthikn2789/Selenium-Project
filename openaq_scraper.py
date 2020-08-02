@@ -116,7 +116,6 @@ def get_pm_data():
         try:
             # Extract Location and City
             loc = driver.find_element_by_xpath("//h1[@class='inpage__title']").text.split("\n")
-            logger.info(f"loc: {loc}")
             location = loc[0]
             city_country = loc[1].replace("in ", "", 1).split(",")
             city = city_country[0]
@@ -162,9 +161,13 @@ if __name__ == "__main__":
     # Initializing log file
     logfile("openaq_selenium.log", maxBytes=1e6, backupCount=3)
 
+    logger.info(f"Scraping started at {time.strftime('%H:%M:%S')}")
     tic = time.time()
-    # get_countries()
-    # get_urls()
+
+    get_countries()
+    get_urls()
     get_pm_data()
+
     toc = time.time()
-    logger.info(f"Elapsed time: {toc-tic} seconds")
+    logger.info(f"Scraping ended at {time.strftime('%H:%M:%S')}")
+    logger.info(f"Elapsed time: {toc-tic}")
