@@ -9,4 +9,3 @@ __pycache__/
 
 ### Log files ###
 *.log
-openaq_selenium.log
