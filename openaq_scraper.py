@@ -12,6 +12,7 @@ import time
 def get_countries():
     """
     Function to fetch all the country countries as listed on openaq.org
+    and write it to a file.
     """
 
     countries_list = []
@@ -25,7 +26,6 @@ def get_countries():
     driver = webdriver.Chrome(desired_capabilities=desired_capabilities)
 
     # Getting webpage with the list of countries
-
     driver.get("https://openaq.org/#/countries")
 
     # Implicit wait
@@ -35,6 +35,7 @@ def get_countries():
     wait = WebDriverWait(driver, 5)
     wait.until(EC.presence_of_element_located((By.CLASS_NAME, "card__title")))
 
+    # Extracting country names
     countries = driver.find_elements_by_class_name("card__title")
     for country in countries:
         countries_list.append(country.text)
@@ -47,6 +48,11 @@ def get_countries():
 
 
 def get_urls():
+    """
+    Function to fetch all the URLs of locations in all the countries that
+    record and report PM2.5 value and write it to a file.
+    """
+
     # Load the countries list written by get_countries()
     with open("countries_list.json", "r") as f:
         countries_list = json.load(f)
@@ -58,16 +64,21 @@ def get_urls():
     options.add_argument("headless")
     desired_capabilities = options.to_capabilities()
     driver = webdriver.Chrome(desired_capabilities=desired_capabilities)
+
     urls_final = []
+
     for country in countries_list:
+
         # Opening locations webpage
         driver.get("https://openaq.org/#/locations")
         driver.implicitly_wait(5)
         urls = []
+
         # Scrolling down the country filter till the country is visible
         action = ActionChains(driver)
         action.move_to_element(driver.find_element_by_xpath("//span[contains(text()," + '"' + country + '"' + ")]"))
         action.perform()
+
         # Identifying country and PM2.5 checkboxes
         country_button = driver.find_element_by_xpath("//label[contains(@for," + '"' + country + '"' + ")]")
         values_button = driver.find_element_by_xpath("//span[contains(text(),'PM2.5')]")
@@ -77,45 +88,61 @@ def get_urls():
         time.sleep(2)
         values_button.click()
         time.sleep(2)
+
+        # Navigating subpages where there are more PM2.5 data. For example, Australia has 162 PM2.5 readings
+        # from 162 different locations that are spread across 11 subpages.
         while True:
-            # Navigating subpages where there are more PM2.5 data. For example, Australia has 162 PM2.5 readings
-            # from 162 different locations that are spread across 11 subpages.
+            # Identifying locations from a subpage
             locations = driver.find_elements_by_xpath("//h1[@class='card__title']/a")
+            # Extracting URLs of locations from a subpage
             for loc in locations:
                 link = loc.get_attribute("href")
                 urls.append(link)
+            # Pressing 'NEXT' button to navigate to next subpage
             try:
                 next_button = driver.find_element_by_xpath("//li[@class='next']")
                 next_button.click()
             except exception.NoSuchElementException:
                 logger.debug(f"Last page reached for {country}")
                 break
+
         logger.info(f"{country} has {len(urls)} PM2.5 URLs")
         urls_final.extend(urls)
+
     logger.info(f"Total PM2.5 URLs: {len(urls_final)}")
     driver.quit()
+
     # Write the URLs to a file
     with open("urls.json", "w") as f:
         json.dump(urls_final, f)
 
 
 def get_pm_data():
+    """
+    Function to extract PM2.5 values from all the URLs
+    and write it to a file.
+    """
+
     # Load the URLs list written by get_urls()
     with open("urls.json", "r") as f:
         urls = json.load(f)
+
     # Use headless option to not open a new browser window
     options = webdriver.ChromeOptions()
     options.add_argument("headless")
     desired_capabilities = options.to_capabilities()
     driver = webdriver.Chrome(desired_capabilities=desired_capabilities)
+
     list_data_dict = []
     count = 0
+
     for i, url in enumerate(urls):
         data_dict = {}
         # Open the webpage corresponding to each URL
         driver.get(url)
         driver.implicitly_wait(10)
         time.sleep(2)
+
         try:
             # Extract Location and City
             loc = driver.find_element_by_xpath("//h1[@class='inpage__title']").text.split("\n")
@@ -126,9 +153,10 @@ def get_pm_data():
             data_dict["country"] = country
             data_dict["city"] = city
             data_dict["location"] = location
+
+            # Extract PM2.5 value, Date and Time of recording
             pm = driver.find_element_by_xpath("//dt[text()='PM2.5']/following-sibling::dd[1]").text
             if pm is not None:
-                # Extract PM2.5 value, Date and Time of recording
                 split = pm.split("µg/m³")
                 pm = split[0]
                 date_time = split[1].replace("at ", "").split(" ")
@@ -140,6 +168,7 @@ def get_pm_data():
                 data_dict["time"] = time_pm
                 list_data_dict.append(data_dict)
                 count += 1
+
         except exception.NoSuchElementException:
             # Logging the info of locations that do not have PM2.5 data for manual checking
             logger.error(f"{location} in {city},{country} does not have PM2.5")
@@ -153,11 +182,13 @@ def get_pm_data():
             driver.quit()
             driver = webdriver.Chrome(desired_capabilities=desired_capabilities)
             logger.info("Chromedriver restarted")
-    # Write the extracted data into a JSON file
-    with open("openaq_data_1.json", "w") as f:
-        json.dump(list_data_dict, f)
+
     logger.info(f"Scraped {count} PM2.5 readings.")
     driver.quit()
+
+    # Write the extracted data into a JSON file
+    with open("openaq_data.json", "w") as f:
+        json.dump(list_data_dict, f)
 
 
 if __name__ == "__main__":
