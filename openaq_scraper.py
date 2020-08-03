@@ -10,6 +10,9 @@ import time
 
 
 def get_countries():
+    """
+    Function to fetch all the country countries as listed on openaq.org
+    """
 
     countries_list = []
 
