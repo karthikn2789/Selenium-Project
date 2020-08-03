@@ -1,4 +1,4 @@
-## Selenium Project
+## Selenium Web Scraping Project
 
 The project contains a selenium example written in Python to demonstrate web scraping. In this project, PM2.5 values from https://openaq.org are extracted and stored in a JSON file using Selenium.
 
