@@ -20,4 +20,4 @@ Geckodriver for Firefox can be installed with the following command.
 
 `sudo apt install firefox-geckodriver`
 
-To run the project, execute `openaq_scraper.py` file and it will generate 3 JSON files as output. 
+To run the project, execute `openaq_scraper.py` file and it will generate 3 JSON files as output. `countries_list.json` contains names of all the countries listed in https[]()://openaq.org. URLs of all the locations reporting PM2.5 values will be stored in `urls.json`. And the extracted PM2.5 values will be stored in `openaq_data.json`.
